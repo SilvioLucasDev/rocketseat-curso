@@ -1,8 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { verify } from "jsonwebtoken";
 
-import { UsersRepository } from "@modules/accounts/infra/typeorm/repositories/UsersRepository";
+import auth from "@config/auth";
 import { AppError } from "@shared/errors/AppErros";
+
+interface IPayload {
+    sub: string;
+    email: string;
+}
 
 export async function ensureAuthenticated(
     request: Request,
@@ -18,17 +23,7 @@ export async function ensureAuthenticated(
     const [, token] = authHeader.split(" ");
 
     try {
-        const { sub: user_id } = verify(
-            token,
-            "6ac16e65544aab027a78a8e0ea5e6bb6"
-        );
-
-        const usersRepository = new UsersRepository();
-        const user = await usersRepository.findByEmail(user_id);
-
-        if (!user) {
-            throw new AppError("User does not exists!", 401);
-        }
+        const { sub: user_id } = verify(token, auth.secret_token) as IPayload;
 
         request.user = {
             id: user_id,
